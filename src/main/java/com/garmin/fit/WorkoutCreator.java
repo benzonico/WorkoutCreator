@@ -1,140 +1,38 @@
 package com.garmin.fit;
 
-import org.apache.commons.io.FileUtils;
-
-import java.io.IOException;
-import java.util.Date;
-import java.util.List;
+import org.apache.commons.cli.BasicParser;
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.CommandLineParser;
+import org.apache.commons.cli.HelpFormatter;
+import org.apache.commons.cli.OptionBuilder;
+import org.apache.commons.cli.Options;
+import org.apache.commons.cli.ParseException;
 
 public class WorkoutCreator {
+
   public static void main(String[] args) {
-    System.out.println("FIT Encode Example Application");
-
-    FileEncoder encode;
-    String filename = args[0];
-    java.io.File file = new java.io.File(filename);
-    String fitName = file.getName().substring(0, file.getName().lastIndexOf('.')) + ".fit";
+    Options options = new Options();
+    options.addOption(OptionBuilder.withLongOpt("help").withDescription("Prints this help").create('h'));
+    options.addOption(OptionBuilder.withLongOpt("setup").withDescription("Setup Configuration")
+        .hasArg().withArgName("FIT_FILE").create('s'));
+    options.addOption(OptionBuilder.withLongOpt("fit").withDescription("Transform to fit file")
+        .hasArg().withArgName("WORKOUT_TXT_FILE").create('f'));
+    CommandLineParser commandLineParser = new BasicParser();
     try {
-      encode = new FileEncoder(new java.io.File(file.getParentFile(), fitName));
-    } catch (FitRuntimeException e) {
-      System.err.println("Error opening file "+fitName);
-      return;
-    }
-
-    FileIdMesg fileIdMesg = new FileIdMesg();
-    fileIdMesg.setManufacturer(Manufacturer.GARMIN);
-    fileIdMesg.setProduct(1328);
-    fileIdMesg.setSerialNumber(3880115687L);
-    fileIdMesg.setType(File.WORKOUT);
-    fileIdMesg.setTimeCreated(new DateTime(new Date()));
-    encode.write(fileIdMesg);
-
-    FileCreatorMesg fileCreatorMesg = new FileCreatorMesg();
-    fileCreatorMesg.setSoftwareVersion(300);
-    encode.write(fileCreatorMesg);
-
-    try {
-      List<String> lines = FileUtils.readLines(file);
-      int lineNb = 0;
-      for (String line : lines) {
-        if (lineNb == 0) {
-          int stepNb = lines.size() - 1;
-          encode.write(createWorkoutMsg(line, stepNb));
-        } else {
-          WorkoutStepMesg workoutStep = createWorkoutStep(line);
-          workoutStep.setMessageIndex(lineNb - 2);
-          encode.write(workoutStep);
-        }
-
-        lineNb++;
+      CommandLine commandLine = commandLineParser.parse(options, args);
+      if (commandLine.hasOption("fit")) {
+        String filename = commandLine.getOptionValue("fit");
+        WorkoutToFit.transformToFit(filename);
+      } else if (commandLine.hasOption("setup")) {
+        System.out.println("SETUP");
+      } else if (commandLine.getArgs().length == 0 || commandLine.hasOption("help")) {
+        HelpFormatter formatter = new HelpFormatter();
+        String header = "Transform txt format input file to .fit file workout";
+        String footer = "created during SonarSource BrainDevDays 2014 by @tomverin and @benzonico";
+        formatter.printHelp("Workout Creator 1.0", header, options, footer, true);
       }
-    } catch (IOException e) {
+    } catch (ParseException e) {
       e.printStackTrace();
     }
-
-    try {
-      encode.close();
-    } catch (FitRuntimeException e) {
-      System.err.println("Error closing encode.");
-      return;
-    }
-
-    System.out.println("Encoded FIT file "+fitName);
   }
-
-  private static WorkoutStepMesg createWorkoutStep(String line) {
-    WorkoutStepMesg step = new WorkoutStepMesg();
-    if (line.startsWith("open")) {
-      step.setDurationType(WktStepDuration.OPEN);
-      step.setTargetType(WktStepTarget.OPEN);
-    } else if (line.startsWith("repeat")) {
-      String[] repeatInstruction = line.split(" ");
-      step.setRepeatSteps(Long.parseLong(repeatInstruction[1]));
-      step.setDurationType(WktStepDuration.REPEAT_UNTIL_STEPS_CMPLT);
-      long stepToLoopBackTo = Long.parseLong(repeatInstruction[2]) - 2; //-2 because index start at 0 and there is title in 1st line
-      step.setDurationStep(stepToLoopBackTo);
-    } else {
-      String[] stepInstructions = line.split(" ");
-      Unit unit = Unit.getUnit(stepInstructions[1]);
-      if (unit == null) {
-        throw new UnsupportedOperationException("Unit was not found");
-      }
-      unit.setValue(stepInstructions[0], step);
-      step.setTargetType(WktStepTarget.OPEN);
-    }
-    return step;
-  }
-
-  private static enum Unit {
-    MIN("min", WktStepDuration.TIME) {
-      @Override
-      public Float getValue(String value) {
-        return Float.parseFloat(value) * 60;
-      }
-    },
-    SECONDS("seconds", WktStepDuration.TIME),
-    METERS("meters", WktStepDuration.DISTANCE);
-
-    private String unitName;
-    private WktStepDuration wktStepDuration;
-
-    private Unit(String unitName, WktStepDuration wktStepDuration) {
-      this.unitName = unitName;
-      this.wktStepDuration = wktStepDuration;
-    }
-
-    public void setValue(String value, WorkoutStepMesg step) {
-      step.setDurationType(wktStepDuration);
-      if (wktStepDuration.equals(WktStepDuration.DISTANCE)) {
-        step.setDurationDistance(getValue(value));
-      } else if (wktStepDuration.equals(WktStepDuration.TIME)) {
-        step.setDurationTime(getValue(value));
-      }
-
-    }
-
-    public Float getValue(String value) {
-      return Float.parseFloat(value);
-    }
-
-    public static Unit getUnit(String unitName) {
-      for (Unit unit : values()) {
-        if (unit.unitName.equals(unitName)) {
-          return unit;
-        }
-      }
-      return null;
-    }
-
-  }
-
-  private static WorkoutMesg createWorkoutMsg(String line, int stepNumber) {
-    WorkoutMesg workoutMesg = new WorkoutMesgPatched();
-    assert WorkoutMesg.workoutMesg.getNumFields() == 5;
-    workoutMesg.setWktName(line);
-    workoutMesg.setNumValidSteps(stepNumber);
-    workoutMesg.setSport(Sport.RUNNING);
-    return workoutMesg;
-  }
-
 }
