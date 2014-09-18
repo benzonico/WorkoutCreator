@@ -13,10 +13,11 @@ public class WorkoutCreator {
     FileEncoder encode;
     String filename = args[0];
     java.io.File file = new java.io.File(filename);
+    String fitName = file.getName().substring(0, file.getName().lastIndexOf('.')) + ".fit";
     try {
-      encode = new FileEncoder(new java.io.File(file.getParentFile(), file.getName()+".fit"));
+      encode = new FileEncoder(new java.io.File(file.getParentFile(), fitName));
     } catch (FitRuntimeException e) {
-      System.err.println("Error opening file "+filename+".fit");
+      System.err.println("Error opening file "+fitName);
       return;
     }
 
@@ -58,7 +59,7 @@ public class WorkoutCreator {
       return;
     }
 
-    System.out.println("Encoded FIT file "+filename+".fit.");
+    System.out.println("Encoded FIT file "+fitName);
   }
 
   private static WorkoutStepMesg createWorkoutStep(String line) {
