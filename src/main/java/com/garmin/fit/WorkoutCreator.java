@@ -24,7 +24,8 @@ public class WorkoutCreator {
         String filename = commandLine.getOptionValue("fit");
         WorkoutToFit.transformToFit(filename);
       } else if (commandLine.hasOption("setup")) {
-        System.out.println("SETUP");
+        String fitFilename = commandLine.getOptionValue("s");
+        new ConfCreator(fitFilename);
       } else if (commandLine.getArgs().length == 0 || commandLine.hasOption("help")) {
         HelpFormatter formatter = new HelpFormatter();
         String header = "Transform txt format input file to .fit file workout";

@@ -20,9 +20,9 @@ public class WorkoutToFit {
     }
 
     FileIdMesg fileIdMesg = new FileIdMesg();
-    fileIdMesg.setManufacturer(Manufacturer.GARMIN);
-    fileIdMesg.setProduct(1328);
-    fileIdMesg.setSerialNumber(3880115687L);
+    fileIdMesg.setManufacturer(ConfCreator.getManufacturer());
+    fileIdMesg.setProduct(ConfCreator.getProduct());
+    fileIdMesg.setSerialNumber(ConfCreator.getSerialNumber());
     fileIdMesg.setType(File.WORKOUT);
     fileIdMesg.setTimeCreated(new DateTime(new Date()));
     encode.write(fileIdMesg);
