@@ -128,7 +128,8 @@ public class WorkoutCreator {
   }
 
   private static WorkoutMesg createWorkoutMsg(String line, int stepNumber) {
-    WorkoutMesg workoutMesg = new WorkoutMesg();
+    WorkoutMesg workoutMesg = new WorkoutMesgPatched();
+    assert WorkoutMesg.workoutMesg.getNumFields() == 5;
     workoutMesg.setWktName(line);
     workoutMesg.setNumValidSteps(stepNumber);
     workoutMesg.setSport(Sport.RUNNING);
