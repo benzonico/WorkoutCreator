@@ -1,0 +1,8 @@
+workout title
+10 min
+400 meters
+90 seconds
+repeat 5 3
+4 min
+repeat 2 3
+open
