@@ -92,6 +92,12 @@ public class WorkoutToFit {
         return Float.parseFloat(value) * 60;
       }
     },
+    MINUTES("minutes", WktStepDuration.TIME) {
+      @Override
+      public Float getValue(String value) {
+        return Float.parseFloat(value) * 60;
+      }
+    },
     SECONDS("seconds", WktStepDuration.TIME),
     METERS("meters", WktStepDuration.DISTANCE);
 
